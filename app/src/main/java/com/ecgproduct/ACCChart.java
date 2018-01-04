@@ -22,9 +22,9 @@ import java.util.concurrent.LinkedBlockingDeque;
  * Created by hero save_on 6/22/2017.
  */
 
-public class ECGChart extends View {
-    private float mGraphMax = 2500.f;
-    private int mRedrawInterval = 50;
+public class ACCChart extends View {
+    private float mGraphMax = 400.f;
+    private int mRedrawInterval = 20;
     private int mRedrawPoints;
 
     static final int SWEEP_MODE = 0;
@@ -36,7 +36,7 @@ public class ECGChart extends View {
 
     private int mWindowSize;
     private int mWindowCount = 2;
-    private int ONEWINDOW = 240;
+    private int ONEWINDOW = 50;
     private LinkedBlockingDeque<Integer> mInputBuf;
     private Vector<Integer> mDrawingBuf;
 
@@ -59,7 +59,7 @@ public class ECGChart extends View {
     private boolean mArrow = false;
     private boolean isConnected = false;
 
-    public ECGChart(Context context, AttributeSet attrs) {
+    public ACCChart(Context context, AttributeSet attrs) {
         super(context, attrs);
         mActivity = (Activity) context;
         TypedArray a = context.getTheme().obtainStyledAttributes(
@@ -113,9 +113,9 @@ public class ECGChart extends View {
     }
 
     private void init() {
-        mRedrawPoints = ONEWINDOW / (1000 / mRedrawInterval);
+        mRedrawPoints = ONEWINDOW / (200 / mRedrawInterval);
         for (int i = 0; i < mWindowSize; i++)
-            mDrawingBuf.add(1250);
+            mDrawingBuf.add((int) (mGraphMax / 2));
 
         TimerTask drawEmitter = new TimerTask() {
             @Override
@@ -127,11 +127,11 @@ public class ECGChart extends View {
                             return;
                         if (mInputBuf.size() < ONEWINDOW)
                             return;
-                        if (mInputBuf.size() > 250) {
+                        if (mInputBuf.size() > 50) {
                             mRedrawPoints++;
                         }
-                        if (mInputBuf.size() <= 250) {
-                            mRedrawPoints = ONEWINDOW / (1000 / mRedrawInterval);
+                        if (mInputBuf.size() <= 50) {
+                            mRedrawPoints = ONEWINDOW / (200 / mRedrawInterval);
                         }
                         if (mGraphMode == SWEEP_MODE) {
                             for (int i = 0; i < mRedrawPoints; i++) {

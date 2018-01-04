@@ -220,8 +220,8 @@
 
                 <FrameLayout
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent">
-
+                    android:layout_height="match_parent"
+                    android:id="@+id/lyt_ecg">
                     <com.ecgproduct.ECGChart
                         android:id="@+id/ecg_flow_chart"
                         android:layout_width="match_parent"
@@ -231,8 +231,133 @@
                         custom:graphMode="1"
                         custom:lineColor="#00ff00"
                         custom:lineSize="4" />
-
                 </FrameLayout>
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/lyt_acc">
+                    <com.ecgproduct.ACCChart
+                        android:id="@+id/x_flow_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#333"
+                        custom:graphMode="1"
+                        custom:arrow="false"
+                        custom:lineColor="#ff0000"
+                        custom:lineSize="4" />
+
+                    <com.ecgproduct.ACCChart
+                        android:id="@+id/y_flow_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        custom:lineColor = "#00ff00"
+                        custom:grid = "false"
+                        custom:arrow="false"
+                        custom:graphMode="1" />
+
+                    <com.ecgproduct.ACCChart
+                        android:id="@+id/z_flow_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        custom:lineColor = "#0000ff"
+                        custom:grid = "false"
+                        custom:arrow="false"
+                        custom:graphMode="1"/>
+                    <LinearLayout
+                        android:layout_width="50dp"
+                        android:layout_height="wrap_content"
+                        android:layout_gravity="left|bottom"
+                        android:orientation="vertical">
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_gravity="center_vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#ccc"
+                                android:text="X : "/>
+                            <LinearLayout
+                                android:layout_width="30dp"
+                                android:layout_height="7dp"
+                                android:layout_gravity="center_vertical"
+                                android:background="#f00"></LinearLayout>
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_gravity="center_vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#ccc"
+                                android:text="Y : "/>
+                            <LinearLayout
+                                android:layout_width="30dp"
+                                android:layout_height="7dp"
+                                android:layout_gravity="center_vertical"
+                                android:background="#0f0"></LinearLayout>
+                        </LinearLayout>
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:orientation="horizontal"
+                            android:layout_gravity="center_vertical">
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:textColor="#ccc"
+                                android:text="Z : "/>
+                            <LinearLayout
+                                android:layout_width="30dp"
+                                android:layout_height="7dp"
+                                android:layout_gravity="center_vertical"
+                                android:background="#00f"></LinearLayout>
+                        </LinearLayout>
+                    </LinearLayout>
+                </FrameLayout>
+                <FrameLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:id="@+id/lyt_hr">
+                    <com.ecgproduct.HRChart
+                        android:id="@+id/hr_flow_chart"
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent"
+                        android:background="#333"
+                        custom:arrow="false"
+                        custom:graphMode="1"
+                        custom:lineColor="#00ff00"
+                        custom:lineSize="4" />
+                </FrameLayout>
+                <RadioGroup
+                    android:layout_width="75dp"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="right"
+                    android:buttonTint="@color/your_color"
+                    android:gravity="left">
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/rd_ecg"
+                        android:onClick="onRadioButtonClicked"
+                        android:text="ECG"/>
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/rd_acc"
+                        android:onClick="onRadioButtonClicked"
+                        android:text="Acc"/>
+                    <RadioButton
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:id="@+id/rd_hrm"
+                        android:onClick="onRadioButtonClicked"
+                        android:text="HR"/>
+                </RadioGroup>
+
             </FrameLayout>
         </LinearLayout>
     </LinearLayout>

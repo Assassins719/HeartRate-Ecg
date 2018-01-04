@@ -10,12 +10,11 @@ import android.bluetooth.BluetoothGattCharacteristic;
 import android.bluetooth.BluetoothGattDescriptor;
 import android.bluetooth.BluetoothGattService;
 import android.bluetooth.BluetoothManager;
-import android.content.Context;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
-import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -35,7 +34,9 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.CheckBox;
+import android.widget.FrameLayout;
 import android.widget.ListView;
+import android.widget.RadioButton;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -77,7 +78,14 @@ public class MainActivity extends AppCompatActivity
     private Boolean isSaving = false;
     private String strFileName = "";
 
+    public FrameLayout lyt_ecg, lyt_acc, lyt_hrm;
+
     private ECGChart mECGFlowChart;
+    private ACCChart mXFlowChart;
+    private ACCChart mYFlowChart;
+    private ACCChart mZFlowChart;
+    private HRChart mHRFlowChart;
+
     private TextView mHeartText;
     private TextView mHRM, mSPO, mTEMP1, mTEMP2;
     int currentPos = -1;
@@ -91,12 +99,13 @@ public class MainActivity extends AppCompatActivity
 
     private LeDeviceListAdapter mLeDeviceListAdapter;
     boolean isFirst = true;
+    int nGraphType = 3;
 
     final Handler handler = new Handler();
     final Runnable runnable = new Runnable() {
         public void run() {
             if (nLoadIndex < loadData.length) {
-                mECGFlowChart.addEcgData(Integer.parseInt(loadData[nLoadIndex]));
+                mHRFlowChart.addEcgData(Integer.parseInt(loadData[nLoadIndex]));
                 mHeartText.setText(Integer.parseInt(loadData[nLoadIndex]) + " BPM");
                 nLoadIndex++;
                 handler.postDelayed(this, 1000);
@@ -122,10 +131,18 @@ public class MainActivity extends AppCompatActivity
         @Override
         public void onConnectionStateChange(BluetoothGatt gatt, int status, int newState) {
             if (newState == BluetoothGatt.STATE_CONNECTED) {
+                Log.d("ConnectionStatus", "Connected");
                 mECGFlowChart.setConnection(true);
+                mXFlowChart.setConnection(true);
+                mYFlowChart.setConnection(true);
+                mZFlowChart.setConnection(true);
                 mBluetoothGatt.discoverServices();
             } else if (newState == BluetoothGatt.STATE_DISCONNECTED) {
+                Log.d("ConnectionStatus", "DisConnected");
                 mECGFlowChart.setConnection(false);
+                mXFlowChart.setConnection(false);
+                mYFlowChart.setConnection(false);
+                mZFlowChart.setConnection(false);
             }
         }
 
@@ -170,6 +187,10 @@ public class MainActivity extends AppCompatActivity
                 if (isSaving) {
                     saveHR(hrValue);
                 }
+                mHRFlowChart.setGraphMax( 200 );
+                if(nGraphType == 3){
+                    mHRFlowChart.addEcgData(hrValue);
+                }
                 final int finalHrValue = hrValue;
                 runOnUiThread(new Runnable() {
                     @Override
@@ -183,6 +204,7 @@ public class MainActivity extends AppCompatActivity
                 int hrsCount = 4;//characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1);
                 int nHRM = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 0);
                 int nSPO = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 1);
+
                 for (int i = 0; i < hrsCount; i++) {
                     ecgVal = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 2 + i * 2);
                     int val = (ecgVal & 0xf000) >> 12;
@@ -192,17 +214,45 @@ public class MainActivity extends AppCompatActivity
                     ecgVal = 50 + ecgVal * 2400 / 4096;
                     mECGFlowChart.setGraphMax(2500);
                     if (isSensorDetected) {
-                        mECGFlowChart.addEcgData(ecgVal);
+                        if(nGraphType == 1)
+                            mECGFlowChart.addEcgData(ecgVal);
                     }
                     hrNumber++;
                     Log.d("ECG", ecgVal + "");
                 }
+
                 int nTemperature1 = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 16);
                 int nTemperature2 = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT8, 17);
-                int accX = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 2 + hrsCount * 2);
-                int accY = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 2 + hrsCount * 2 + 2);
-                int accZ = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 2 + hrsCount * 2 + 4);
-//                updateView(1, isSensorDetected, nBatteryAmount, accX, accY, accZ);
+                int accX = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 3 + hrsCount * 2);
+                int accY = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 3 + hrsCount * 2 + 2);
+                int accZ = characteristic.getIntValue(BluetoothGattCharacteristic.FORMAT_UINT16, 3 + hrsCount * 2 + 4);
+                float accxx;
+                if (accX > 2047)
+                    accxx = ((accX- 2048) / 512f) - (float) 4;
+                else
+                    accxx = (accX) / 512f;
+
+                float accyy;
+                if (accY > 2047)
+                    accyy = ((accY - 2048) / 512f) - (float) 4;
+                else
+                    accyy = (accY) / 512f;
+
+                float acczz;
+                if (accZ > 2047)
+                    acczz = ((accZ- 2048) / 512f) - (float) 4;
+                else
+                    acczz = (accZ) / 512f;
+
+                Log.d("Accx", ":" + accxx +";"+ accyy +";"+ acczz);
+                mXFlowChart.setGraphMax(400);
+                mYFlowChart.setGraphMax(400);
+                mZFlowChart.setGraphMax(400);
+                if(nGraphType == 2){
+                    mXFlowChart.addEcgData((int) ((accxx + 4)* 50));
+                    mYFlowChart.addEcgData((int) ((accyy + 4)* 50));
+                    mZFlowChart.addEcgData((int) ((acczz + 4)* 50));
+                }
                 updateTemperature(nHRM, nSPO, nTemperature1, nTemperature2);
             }
         }
@@ -260,6 +310,7 @@ public class MainActivity extends AppCompatActivity
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON); // keep screen
 
         currentBle = null;
+
         initViews();
         _checkPermission();
     }
@@ -281,7 +332,25 @@ public class MainActivity extends AppCompatActivity
         mTEMP1 = (TextView) findViewById(R.id.tx_temp1);
         mTEMP2 = (TextView) findViewById(R.id.tx_temp2);
 
+        lyt_ecg = (FrameLayout) findViewById(R.id.lyt_ecg);
+        lyt_acc = (FrameLayout) findViewById(R.id.lyt_acc);
+        lyt_hrm = (FrameLayout) findViewById(R.id.lyt_hr);
+
         mECGFlowChart = (ECGChart) findViewById(R.id.ecg_flow_chart);
+        mXFlowChart = (ACCChart) findViewById(R.id.x_flow_chart);
+        mYFlowChart = (ACCChart) findViewById(R.id.y_flow_chart);
+        mZFlowChart = (ACCChart) findViewById(R.id.z_flow_chart);
+        mHRFlowChart = (HRChart) findViewById(R.id.hr_flow_chart);
+        lyt_ecg.setVisibility(View.GONE);
+        lyt_acc.setVisibility(View.GONE);
+        lyt_hrm.setVisibility(View.VISIBLE);
+        RadioButton rb1 = (RadioButton) findViewById(R.id.rd_ecg);
+        RadioButton rb2 = (RadioButton) findViewById(R.id.rd_acc);
+        RadioButton rb3 = (RadioButton) findViewById(R.id.rd_hrm);
+        rb1.setChecked(false);
+        rb2.setChecked(false);
+        rb3.setChecked(true);
+        nGraphType = 3;
         btnSave = (Button) findViewById(R.id.btn_save);
         btnSave.setOnClickListener(new View.OnClickListener() {
             public void onClick(View v) {
@@ -336,7 +405,7 @@ public class MainActivity extends AppCompatActivity
                     File file = new File(strFileName);
                     disconnect();
                     nLoadIndex = 0;
-//                    mECGFlowChart.clearGraph();
+                    mHRFlowChart.clearGraph();
                     if (file.exists()) {
                         BufferedReader br = null;
                         try {
@@ -361,7 +430,7 @@ public class MainActivity extends AppCompatActivity
                 } else {
                     btnPlay.setText("Play");
                     btnPlay.setBackgroundResource(R.drawable.radiusbuttongreen);
-//                    mECGFlowChart.clearGraph();
+                    mHRFlowChart.clearGraph();
                     handler.removeCallbacks(runnable);
                 }
                 isPlaying = !isPlaying;
@@ -486,6 +555,47 @@ public class MainActivity extends AppCompatActivity
             btnScan.setSelected(true);
         }
     }
+    public void onRadioButtonClicked(View  v){
+        RadioButton rb1 = (RadioButton) findViewById(R.id.rd_ecg);
+        RadioButton rb2 = (RadioButton) findViewById(R.id.rd_acc);
+        RadioButton rb3 = (RadioButton) findViewById(R.id.rd_hrm);
+        boolean  checked = ((RadioButton) v).isChecked();
+        switch(v.getId()){
+            case R.id.rd_ecg:
+                if(checked) {
+                    nGraphType = 1;
+                    lyt_ecg.setVisibility(View.VISIBLE);
+                    lyt_acc.setVisibility(View.GONE);
+                    lyt_hrm.setVisibility(View.GONE);
+                    rb1.setTextColor(getResources().getColor(R.color.colorAccent));
+                }
+                rb3.setTextColor(Color.BLACK);
+                rb2.setTextColor(Color.BLACK);
+                break;
+            case R.id.rd_acc:
+                if(checked) {
+                    nGraphType = 2;
+                    lyt_ecg.setVisibility(View.GONE);
+                    lyt_acc.setVisibility(View.VISIBLE);
+                    lyt_hrm.setVisibility(View.GONE);
+                    rb2.setTextColor(getResources().getColor(R.color.colorAccent));
+                }
+                rb3.setTextColor(Color.BLACK);
+                rb1.setTextColor(Color.BLACK);
+                break;
+            case R.id.rd_hrm:
+                if(checked) {
+                    nGraphType = 3;
+                    lyt_ecg.setVisibility(View.GONE);
+                    lyt_acc.setVisibility(View.GONE);
+                    lyt_hrm.setVisibility(View.VISIBLE);
+                    rb3.setTextColor(getResources().getColor(R.color.colorAccent));
+                }
+                rb1.setTextColor(Color.BLACK);
+                rb2.setTextColor(Color.BLACK);
+                break;
+        }
+    }
 
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
@@ -528,8 +638,21 @@ public class MainActivity extends AppCompatActivity
         Log.d(TAG, "disconnect");
 
         mBluetoothGatt.close();
+        mBluetoothGatt = null;
         currentBle = null;
         isConnected = false;
+        isFirst = true;
+        mHRM.setText("- BPM");
+        mSPO.setText("- %");
+        mTEMP1.setText("- ℃");
+        mTEMP2.setText("- ℃");
+        mHeartText.setText("- BPM");
+        mHRFlowChart.clearGraph();
+        mXFlowChart.clearGraph();
+        mYFlowChart.clearGraph();
+        mZFlowChart.clearGraph();
+        mECGFlowChart.clearGraph();
+
     }
 
     boolean isConnected = false;

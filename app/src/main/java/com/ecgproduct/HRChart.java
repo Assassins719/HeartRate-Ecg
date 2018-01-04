@@ -22,9 +22,9 @@ import java.util.concurrent.LinkedBlockingDeque;
  * Created by hero save_on 6/22/2017.
  */
 
-public class ECGChart extends View {
-    private float mGraphMax = 2500.f;
-    private int mRedrawInterval = 50;
+public class HRChart extends View {
+    private float mGraphMax = 200.f;
+    private int mRedrawInterval = 1000;
     private int mRedrawPoints;
 
     static final int SWEEP_MODE = 0;
@@ -35,8 +35,8 @@ public class ECGChart extends View {
     private int mArrowColor;
 
     private int mWindowSize;
-    private int mWindowCount = 2;
-    private int ONEWINDOW = 240;
+    private int mWindowCount = 1;
+    private int ONEWINDOW = 30;
     private LinkedBlockingDeque<Integer> mInputBuf;
     private Vector<Integer> mDrawingBuf;
 
@@ -59,7 +59,7 @@ public class ECGChart extends View {
     private boolean mArrow = false;
     private boolean isConnected = false;
 
-    public ECGChart(Context context, AttributeSet attrs) {
+    public HRChart(Context context, AttributeSet attrs) {
         super(context, attrs);
         mActivity = (Activity) context;
         TypedArray a = context.getTheme().obtainStyledAttributes(
@@ -115,49 +115,7 @@ public class ECGChart extends View {
     private void init() {
         mRedrawPoints = ONEWINDOW / (1000 / mRedrawInterval);
         for (int i = 0; i < mWindowSize; i++)
-            mDrawingBuf.add(1250);
-
-        TimerTask drawEmitter = new TimerTask() {
-            @Override
-            public void run() {
-                mActivity.runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!isConnected)
-                            return;
-                        if (mInputBuf.size() < ONEWINDOW)
-                            return;
-                        if (mInputBuf.size() > 250) {
-                            mRedrawPoints++;
-                        }
-                        if (mInputBuf.size() <= 250) {
-                            mRedrawPoints = ONEWINDOW / (1000 / mRedrawInterval);
-                        }
-                        if (mGraphMode == SWEEP_MODE) {
-                            for (int i = 0; i < mRedrawPoints; i++) {
-                                int val = mInputBuf.pollFirst();
-                                mDrawingBuf.remove(mDrawPosition);
-                                mDrawingBuf.add(mDrawPosition++, val);
-                                if (mDrawPosition >= mWindowSize) mDrawPosition = 0;
-                            }
-                        } else {
-                            for (int i = 0; i < mRedrawPoints; i++) {
-                                int val = mInputBuf.pollFirst();
-                                mDrawingBuf.remove(0);
-                                mDrawingBuf.add(val);
-                            }
-                        }
-
-
-                        invalidate();
-//                        Log.d("inputBufSizeinput", mInputBuf.size() + "");
-//                        Log.d("inputBufSizedraw", mDrawingBuf.size() + "");
-                    }
-                });
-            }
-        };
-        Timer timer = new Timer();
-        timer.schedule(drawEmitter, 0, mRedrawInterval);
+            mDrawingBuf.add(0);
     }
 
     public void setGraphMax(int m) {
@@ -167,31 +125,20 @@ public class ECGChart extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-
+        Log.d("drawing","drawing");
         float width = this.getWidth();
         float height = this.getHeight();
 
-        if (mDrawingBuf.size() < mWindowSize)
-            return;
 
-        float mapRatio = (float) width / mWindowSize;
+        float mapRatio = (float) width / (mWindowSize-1);
         int start = mDrawingBuf.get(0);
-//        if (mGraphMode == FLOW_MODE)
         for (int i = 1; i < mWindowSize; i++) {
             int end = mDrawingBuf.get(i);
-            canvas.drawLine(i * mapRatio, height - start / mGraphMax * height, (i + 1) * mapRatio, height - end / mGraphMax * height, mPaint);
+            canvas.drawLine((i-1) * mapRatio, height - start / mGraphMax * height, (i) * mapRatio, height - end / mGraphMax * height, mPaint);
             start = end;
         }
-
-        if (mGraphMode == SWEEP_MODE)
-            canvas.drawRect((mDrawPosition - 10) * mapRatio, 0, (mDrawPosition + 10) * mapRatio, height, mMaskBarPaint);
         if (mGrid)
             drawGridLine(canvas);
-    }
-
-    public void setMode(int type) {
-        mInputBuf.clear();
-        mGraphMode = type;
     }
 
     public void setConnection(boolean isConnect) {
@@ -207,9 +154,6 @@ public class ECGChart extends View {
         int gridYNumber = 4;
         for (int i = 0; i < gridXNumber; i++) {
             canvas.drawLine(i * width / gridXNumber, 0, i * width / gridXNumber, height, mPaintGrid);
-//            String text = i + "";
-//            float txtWidth = mPaintRuler.measureText(text);
-//            canvas.drawText(text, i * width / gridXNumber - txtWidth / 2f, height - 4, mPaintRuler);
         }
 
         for (int i = 0; i < gridXNumber; i++) {
@@ -220,7 +164,6 @@ public class ECGChart extends View {
 
         for (int i = 0; i < gridYNumber; i++) {
             canvas.drawLine(0, i * height / gridYNumber, width, i * height / gridYNumber, mPaintGrid);
-//            canvas.drawT
         }
 
         for (int i = 0; i < gridYNumber; i++) {
@@ -228,67 +171,21 @@ public class ECGChart extends View {
                 canvas.drawLine(0, i * height / gridYNumber + j * height / gridYNumber / 10f,
                         width, i * height / gridYNumber + j * height / gridYNumber / 10f, mPaintSmallGrid);
         }
-        if (mArrow) {
-            float pX = 10;
-            float pY = height - 10;
-            float dx = width / gridXNumber;
-            float dy = height / gridYNumber;
-            canvas.drawLine(pX, pY, pX, pY - dy + 5, mPaintArrow);
-            canvas.drawLine(pX, pY, pX + dx - 5, pY, mPaintArrow);
+    }
 
-            Path path = new Path();
-
-            path.moveTo(0, -10);
-            path.lineTo(5, 0);
-            path.lineTo(-5, 0);
-            path.close();
-
-            Path path2 = new Path();
-
-            path2.moveTo(10, 0);
-            path2.lineTo(0, 5);
-            path2.lineTo(0, -5);
-            path2.close();
-
-            path.offset(pX, pY - dy + 5);
-            path2.offset(pX + dx - 5, pY);
-
-            canvas.drawPath(path, mPaintArrow);
-            canvas.drawPath(path2, mPaintArrow);
-            mPaintArrow.setStrokeWidth(1);
-            mPaintArrow.setAntiAlias(true);
-
-            canvas.drawText("250 ms", pX + 28, pY - 10, mPaintArrow);
-            canvas.drawText("500 mV", pX + 8, pY - dy + 15, mPaintArrow);
-        }
+    public void addEcgData(int data) {
+        Log.d("Drawingsize",mDrawingBuf.size()+"");
+        mDrawingBuf.remove(0);
+        mDrawingBuf.add(data);
+        mActivity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                invalidate();
+            }
+        });
     }
     public void clearGraph(){
-        for (int i = 0; i < mWindowSize*2; i++)
-            addEcgData((int) (mGraphMax/2));
-    }
-    public void addEcgData(int data) {
-        mInputBuf.addLast(data);
-    }
-
-//    public void addEcgData(LinkedBlockingDeque<Integer> data) {
-//        checkBufOverflow();
-//        for (int i = 0; i < data.size(); i++) {
-//            try {
-//                mInputBuf.addLast(data.takeFirst());
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
-//        }
-//        if(data.size()>0) {
-//            ONEWINDOW = data.size();
-//            mWindowSize = ONEWINDOW * 3;
-//            mRedrawPoints = ONEWINDOW / (1000 / mRedrawInterval);
-//        }
-//    }
-
-    private void checkBufOverflow() {
-//        Log.i("size", mInputBuf.size() + "");
-        if (mInputBuf.size() > 2000)
-            mInputBuf.clear();
+        for (int i = 0; i < mWindowSize; i++)
+            addEcgData(0);
     }
 }
